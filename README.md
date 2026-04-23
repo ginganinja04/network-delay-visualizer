@@ -35,19 +35,12 @@ A static web app built with plain HTML, CSS, and JavaScript. It includes:
   - Repeated per-hop delay view
   - Table of per-hop and across-path values
 
-## Running Locally
 
-No build step is required right now.
-
-1. Clone the repository.
-2. Open `index.html` in a browser.
-3. Open `formulas.html` for the math reference page.
-
-Because the project is a static site, it is also a good fit for GitHub Pages.
 
 ## Implementation Notes
 
 - The current model assumes each link has the same distance and bandwidth, and each intermediate device has the same processing delay and queueing delay.
+- A hop count of `0` represents a direct source-to-destination path with `1` link and no intermediate devices.
 - End-to-end delay is computed as:
 
 ```text

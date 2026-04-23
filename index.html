@@ -37,7 +37,7 @@
         <div class="hero-formula">
           <p class="formula-label">Total Delay</p>
           <p class="formula">
-            hops × (transmission + propagation + processing + queueing)
+            (hops + 1) × (transmission + propagation) + hops × (processing + queueing)
           </p>
         </div>
       </section>
@@ -124,7 +124,7 @@
                 id="hops"
                 name="hops"
                 type="number"
-                min="1"
+                min="0"
                 step="1"
                 value="4"
               />
@@ -338,7 +338,7 @@
             <div class="card-header">
               <div>
                 <p class="card-kicker">Per-Hop View</p>
-                <h2>Repeated Delay at Each Router</h2>
+                <h2>Delay Across Links and Devices</h2>
               </div>
               <p class="card-caption" id="perHopLabel"></p>
             </div>

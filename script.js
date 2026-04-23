@@ -180,14 +180,16 @@ function renderSummary(model) {
     {
       label: "Total End-to-End Delay",
       value: formatDuration(model.totalDelay),
-      detail: `${model.deviceCount} devices and ${model.linkCount} links`,
+      detail: describePath(model),
     },
     {
       label: "Per-Link Travel",
       value: formatDuration(model.perLinkDelay),
       detail: model.inputs.useAdvancedLinks
         ? `Average across ${model.linkCount} custom links`
-        : `Repeated across ${model.linkCount} links`,
+        : model.linkCount === 1
+          ? "Single direct link"
+          : `Repeated across ${model.linkCount} links`,
     },
     {
       label: "Transmission Per Link",
@@ -199,7 +201,9 @@ function renderSummary(model) {
     {
       label: "Processing + Queueing Per Device",
       value: formatDuration(model.perDeviceDelay),
-      detail: `Repeated at ${model.deviceCount} intermediate devices`,
+      detail: model.deviceCount === 0
+        ? "No intermediate devices on this path"
+        : `Repeated at ${model.deviceCount} intermediate devices`,
     },
     {
       label: "Propagation Per Link",
@@ -269,7 +273,7 @@ function renderBreakdown(model) {
 }
 
 function renderHopBars(model) {
-  perHopLabel.textContent = `${model.deviceCount} devices and ${model.linkCount} links`;
+  perHopLabel.textContent = describePath(model);
 
   const deviceSegments = [
     ["processing", model.perHopSeconds.processing],
@@ -449,23 +453,28 @@ function renderSimulationTimeline(model) {
   const baseSegments = [
     {
       key: "linkTravel",
-      label: "Link Travel",
+      label: model.linkCount === 1 ? "Direct Link Travel" : "Link Travel",
       duration: model.perHopSeconds.transmission + model.perHopSeconds.propagation,
       color: "linear-gradient(90deg, #0f766e, #c2410c)",
     },
-    {
-      key: "queueing",
-      label: "Queueing",
-      duration: model.perHopSeconds.queueing,
-      color: componentColors.queueing,
-    },
-    {
-      key: "processing",
-      label: "Processing",
-      duration: model.perHopSeconds.processing,
-      color: componentColors.processing,
-    },
   ];
+
+  if (model.deviceCount > 0) {
+    baseSegments.push(
+      {
+        key: "queueing",
+        label: "Queueing",
+        duration: model.perHopSeconds.queueing,
+        color: componentColors.queueing,
+      },
+      {
+        key: "processing",
+        label: "Processing",
+        duration: model.perHopSeconds.processing,
+        color: componentColors.processing,
+      },
+    );
+  }
 
   const longest = Math.max(...baseSegments.map((segment) => segment.duration), 0);
 
@@ -735,7 +744,7 @@ function movePacketElementTo(packetElement, position) {
 
 function showPacket(packetElement) {
   packetElement.classList.add("is-visible");
-  packetElement.classList.remove("is-fading");
+  packetElement.classList.remove("is-fading", "is-arrived");
 }
 
 function clearPacketLoss(packetElement) {
@@ -786,8 +795,8 @@ async function settleDeliveredPacket(runId, packetElement) {
     return;
   }
 
-  packetElement.classList.add("is-fading");
-  await delay(180);
+  packetElement.classList.add("is-arrived");
+  await delay(420);
   hidePacketElement(packetElement);
 }
 
@@ -796,7 +805,7 @@ function hidePacketElement(packetElement) {
     return;
   }
 
-  packetElement.classList.remove("is-visible", "is-lost", "is-fading");
+  packetElement.classList.remove("is-visible", "is-lost", "is-fading", "is-arrived");
   packetElement.style.opacity = "";
 }
 
@@ -1026,6 +1035,14 @@ function buildSimulationSummary(packetCount, results) {
   }
 
   return `${results.delivered} delivered · ${results.lost} lost`;
+}
+
+function describePath(model) {
+  if (model.deviceCount === 0) {
+    return "Direct path: source to destination over 1 link";
+  }
+
+  return `${model.deviceCount} intermediate devices and ${model.linkCount} links`;
 }
 
 function readAdvancedLinkOverrides(linkCount, defaultsForLinks, useAdvanced) {
