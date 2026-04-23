@@ -1,10 +1,6 @@
 # Network Delay Visualizer
 
-🚧 **Work in Progress** 🚧
-
 An interactive, browser based tool that models end to end network delay and visualizes how each delay component contributes to total latency.
-
-This project is currently under active development as part of a graduate level Computer Networks course. Core functionality is being implemented incrementally, with a focus on correctness, clarity, and accessibility.
 
 ---
 
@@ -12,37 +8,61 @@ This project is currently under active development as part of a graduate level C
 
 Network delay is a fundamental concept in computer networks, but it is often difficult to build intuition using equations alone. This tool allows users to adjust common network parameters and immediately see how transmission, propagation, processing, and queueing delays contribute to total end-to-end latency.
 
-The goal of the project is accessibility. Any student should be able to use the tool directly in a web browser with no installation or setup required.
+The goal is accessibility. Students can use the tool directly in a web browser with no installation or setup required.
 
 ---
 
-## Features (Planned and In Progress)
+## Features
 
-- Adjustable network parameters:
+A static web app built with plain HTML, CSS, and JavaScript. It includes:
+
+- Adjustable inputs for:
   - Packet size
   - Link bandwidth
-  - Propagation distance
-  - Propagation speed
-  - Number of hops
-  - Processing delay per hop
-  - Queueing delay per hop
-- Delay calculations:
+  - Distance per link
+  - Propagation speed as a fraction of the speed of light
+  - Hop count as number of intermediate devices
+  - Processing delay per device
+  - Queueing delay per device
+- Automatic calculations for:
   - Transmission delay
   - Propagation delay
   - Processing delay
   - Queueing delay
-  - Total end to end delay
-- Visualization:
+  - Total end-to-end delay
+- Visual output for:
   - Delay breakdown by component
-  - Optional per hop view
+  - Repeated per-hop delay view
+  - Table of per-hop and across-path values
+
+## Running Locally
+
+No build step is required right now.
+
+1. Clone the repository.
+2. Open `index.html` in a browser.
+3. Open `formulas.html` for the math reference page.
+
+Because the project is a static site, it is also a good fit for GitHub Pages.
+
+## Implementation Notes
+
+- The current model assumes each link has the same distance and bandwidth, and each intermediate device has the same processing delay and queueing delay.
+- End-to-end delay is computed as:
+
+```text
+total delay = (hops + 1) × (transmission + propagation) + hops × (processing + queueing)
+```
+
+- Transmission delay uses `L / R`.
+- Propagation delay uses `d / s`.
 
 ---
 
 ## Tech Stack
 
 - HTML, CSS, JavaScript
-- Visualization library: Chart.js or Plotly.js
+- Visualization rendered directly in the page without a separate chart dependency
 - Hosted as a static site using GitHub Pages
 
 ---
-

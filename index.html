@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Network Delay Visualizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <nav class="top-nav" aria-label="Primary">
+        <a class="nav-link is-active" href="index.html">Visualizer</a>
+        <a class="nav-link" href="formulas.html">Formulas &amp; Math</a>
+      </nav>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Computer Networks · Delay Modeling</p>
+          <h1>Understand where end-to-end latency actually comes from.</h1>
+          <p class="hero-text">
+            Adjust packet size, bandwidth, distance, and hop behavior to see how
+            transmission, propagation, processing, and queueing delays combine
+            across a path.
+          </p>
+          <p class="hero-link-row">
+            <a class="inline-link" href="formulas.html">
+              See the formulas used in this calculator
+            </a>
+          </p>
+        </div>
+        <div class="hero-formula">
+          <p class="formula-label">Total Delay</p>
+          <p class="formula">
+            hops × (transmission + propagation + processing + queueing)
+          </p>
+        </div>
+      </section>
+
+      <section class="workspace">
+        <form class="control-panel" id="controls">
+          <div class="panel-heading">
+            <h2>Inputs</h2>
+            <div class="panel-actions">
+              <button type="button" class="ghost-button" id="toggleAdvancedView">
+                Open Advanced View
+              </button>
+              <button type="button" class="ghost-button" id="resetButton">
+                Reset Defaults
+              </button>
+            </div>
+          </div>
+
+          <label class="control">
+            <span>Packet Size</span>
+            <div class="control-input">
+              <input
+                id="packetSize"
+                name="packetSize"
+                type="number"
+                min="1"
+                step="1"
+                value="1500"
+              />
+              <span class="unit">bytes</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Link Bandwidth</span>
+            <div class="control-input">
+              <input
+                id="bandwidthMbps"
+                name="bandwidthMbps"
+                type="number"
+                min="0.001"
+                step="0.001"
+                value="100"
+              />
+              <span class="unit">Mbps</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Distance Per Hop</span>
+            <div class="control-input">
+              <input
+                id="distanceKm"
+                name="distanceKm"
+                type="number"
+                min="0"
+                step="0.1"
+                value="250"
+              />
+              <span class="unit">km</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Propagation Speed</span>
+            <div class="control-input">
+              <input
+                id="propagationFactor"
+                name="propagationFactor"
+                type="number"
+                min="0.01"
+                max="1"
+                step="0.01"
+                value="0.67"
+              />
+              <span class="unit">× c</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Number of Hops</span>
+            <div class="control-input">
+              <input
+                id="hops"
+                name="hops"
+                type="number"
+                min="1"
+                step="1"
+                value="4"
+              />
+              <span class="unit">routers</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Processing Delay Per Hop</span>
+            <div class="control-input">
+              <input
+                id="processingMs"
+                name="processingMs"
+                type="number"
+                min="0"
+                step="0.01"
+                value="0.3"
+              />
+              <span class="unit">ms</span>
+            </div>
+          </label>
+
+          <label class="control">
+            <span>Queueing Delay Per Hop</span>
+            <div class="control-input">
+              <input
+                id="queueingMs"
+                name="queueingMs"
+                type="number"
+                min="0"
+                step="0.01"
+                value="1.2"
+              />
+              <span class="unit">ms</span>
+            </div>
+          </label>
+
+          <section class="advanced-panel" id="advancedLinksPanel">
+            <div class="advanced-panel-heading">
+              <span>
+                <strong>Packet Variation</strong>
+                <small>
+                  Adjust packet loss, jitter, and packet trains for the
+                  simulation.
+                </small>
+              </span>
+            </div>
+
+            <p class="advanced-panel-copy">
+              Packet loss is applied independently on each link, while jitter
+              adds a random extra delay during travel.
+            </p>
+
+            <div class="advanced-panel-body">
+              <label class="control">
+                <span>Packet Loss Per Link</span>
+                <div class="control-input">
+                  <input
+                    id="packetLossPercent"
+                    name="packetLossPercent"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                    value="0"
+                  />
+                  <span class="unit">%</span>
+                </div>
+              </label>
+
+              <label class="control">
+                <span>Jitter Per Link</span>
+                <div class="control-input">
+                  <input
+                    id="jitterMs"
+                    name="jitterMs"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value="0"
+                  />
+                  <span class="unit">ms</span>
+                </div>
+              </label>
+
+              <label class="control">
+                <span>Packets Per Simulation</span>
+                <div class="control-input">
+                  <input
+                    id="packetCount"
+                    name="packetCount"
+                    type="number"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value="1"
+                  />
+                  <span class="unit">packets</span>
+                </div>
+              </label>
+
+              <div class="link-overrides-panel" id="linkOverridesPanel">
+                <div class="advanced-link-grid" id="advancedLinkGrid"></div>
+              </div>
+            </div>
+          </section>
+
+          <div class="notes-card">
+            <h3>Model Assumptions</h3>
+            <p>
+              Basic view uses the same bandwidth, distance, processing delay,
+              and queueing delay at each hop. Advanced view can customize
+              bandwidth and distance per link.
+            </p>
+          </div>
+        </form>
+
+        <section class="results-panel">
+          <div class="summary-grid" id="summaryGrid"></div>
+
+          <article class="visual-card simulation-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">Traffic Simulation</p>
+                <h2>Packet Travel Across Nodes</h2>
+              </div>
+              <div class="simulation-header-actions">
+                <p class="card-caption" id="simulationStatus">
+                  Ready to simulate
+                </p>
+                <button
+                  type="button"
+                  class="ghost-button simulation-toggle"
+                  id="toggleSimulationPane"
+                  aria-expanded="true"
+                >
+                  Hide Pane
+                </button>
+              </div>
+            </div>
+
+            <div class="simulation-pane-body" id="simulationPaneBody">
+              <div class="simulation-controls" aria-label="Simulation controls">
+                <button type="button" class="ghost-button" id="sendButton">
+                  Send Packet
+                </button>
+                <button
+                  type="button"
+                  class="ghost-button"
+                  id="toggleLoopButton"
+                >
+                  Start Auto Play
+                </button>
+                <button type="button" class="ghost-button" id="stopButton">
+                  Stop
+                </button>
+              </div>
+
+              <div class="simulation-stage" id="simulationStage">
+                <div class="simulation-path" id="simulationPath"></div>
+                <div class="packet-layer" id="packetLayer" aria-hidden="true"></div>
+              </div>
+
+              <div class="simulation-legend">
+                <div class="legend-chip">
+                  <span class="swatch" style="background:#0f766e;"></span>
+                  <span>Transmission</span>
+                </div>
+                <div class="legend-chip">
+                  <span class="swatch" style="background:#c2410c;"></span>
+                  <span>Propagation</span>
+                </div>
+                <div class="legend-chip">
+                  <span class="swatch" style="background:#6d28d9;"></span>
+                  <span>Processing</span>
+                </div>
+                <div class="legend-chip">
+                  <span class="swatch" style="background:#2563eb;"></span>
+                  <span>Queueing</span>
+                </div>
+                <div class="legend-chip">
+                  <span class="swatch" style="background:#dc2626;"></span>
+                  <span>Packet Loss</span>
+                </div>
+                <div class="legend-chip">
+                  <span
+                    class="swatch"
+                    style="background:linear-gradient(90deg, #14b8a6, #f59e0b);"
+                  ></span>
+                  <span>Jitter Variation</span>
+                </div>
+              </div>
+
+              <div class="simulation-timeline" id="simulationTimeline"></div>
+            </div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">Delay Breakdown</p>
+                <h2>Total Latency Composition</h2>
+              </div>
+              <p class="card-caption" id="totalDelayLabel"></p>
+            </div>
+            <div class="stacked-bar" id="stackedBar" aria-hidden="true"></div>
+            <div class="legend" id="legend"></div>
+          </article>
+
+          <article class="visual-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">Per-Hop View</p>
+                <h2>Repeated Delay at Each Router</h2>
+              </div>
+              <p class="card-caption" id="perHopLabel"></p>
+            </div>
+            <div class="hop-bars" id="hopBars"></div>
+          </article>
+
+          <article class="table-card">
+            <div class="card-header">
+              <div>
+                <p class="card-kicker">Reference Table</p>
+                <h2>Component Details</h2>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Component</th>
+                    <th>Per Hop</th>
+                    <th>Across Path</th>
+                    <th>Formula</th>
+                  </tr>
+                </thead>
+                <tbody id="detailTable"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

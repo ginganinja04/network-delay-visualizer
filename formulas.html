@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Network Delay Visualizer · Formulas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page-shell">
+      <nav class="top-nav" aria-label="Primary">
+        <a class="nav-link" href="index.html">Visualizer</a>
+        <a class="nav-link is-active" href="formulas.html">Formulas &amp; Math</a>
+      </nav>
+
+      <section class="hero hero-single">
+        <div class="hero-copy">
+          <p class="eyebrow">Computer Networks · Reference</p>
+          <h1>How the delay values are calculated.</h1>
+          <p class="hero-text">
+            This page shows the exact equations used by the visualizer and how
+            each input maps to the symbols in the formulas.
+          </p>
+        </div>
+      </section>
+
+      <section class="formula-layout">
+        <article class="formula-card">
+          <p class="card-kicker">Main Equation</p>
+          <h2>Total End-to-End Delay</h2>
+          <p class="math-block">
+            d<sub>total</sub> = (h + 1) × (d<sub>trans</sub> + d<sub>prop</sub>)
+            + h × (d<sub>proc</sub> + d<sub>queue</sub>)
+          </p>
+          <p class="formula-copy">
+            Hop count is the number of intermediate devices the traffic passes
+            through before reaching the destination. That means there are
+            <strong>h + 1 links</strong> between source and destination, but
+            only <strong>h intermediate devices</strong> that contribute
+            processing and queueing delay.
+          </p>
+        </article>
+
+        <article class="formula-card">
+          <p class="card-kicker">Symbols</p>
+          <h2>What Each Variable Means</h2>
+          <div class="symbol-grid">
+            <div class="symbol-item">
+              <strong>h</strong>
+              <span>Number of intermediate devices on the path</span>
+            </div>
+            <div class="symbol-item">
+              <strong>L</strong>
+              <span>Packet length in bits</span>
+            </div>
+            <div class="symbol-item">
+              <strong>R</strong>
+              <span>Link rate in bits per second</span>
+            </div>
+            <div class="symbol-item">
+              <strong>d</strong>
+              <span>Distance per link</span>
+            </div>
+            <div class="symbol-item">
+              <strong>s</strong>
+              <span>Propagation speed</span>
+            </div>
+            <div class="symbol-item">
+              <strong>c</strong>
+              <span>Speed of light, about 3.00 × 10<sup>8</sup> m/s</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="formula-card">
+          <p class="card-kicker">Component 1</p>
+          <h2>Transmission Delay</h2>
+          <p class="math-block">d<sub>trans</sub> = L / R</p>
+          <p class="formula-copy">
+            Transmission delay is the time required to push all packet bits onto
+            the link. In the app:
+          </p>
+          <div class="explanation-list">
+            <p><strong>L</strong> = packet size in bytes × 8</p>
+            <p><strong>R</strong> = bandwidth in Mbps × 1,000,000</p>
+          </div>
+        </article>
+
+        <article class="formula-card">
+          <p class="card-kicker">Component 2</p>
+          <h2>Propagation Delay</h2>
+          <p class="math-block">d<sub>prop</sub> = d / s</p>
+          <p class="formula-copy">
+            Propagation delay is the time required for the signal to travel
+            across the physical medium. In the app:
+          </p>
+          <div class="explanation-list">
+            <p><strong>d</strong> = distance per link in km × 1,000</p>
+            <p><strong>s</strong> = propagation factor × c</p>
+          </div>
+        </article>
+
+        <article class="formula-card">
+          <p class="card-kicker">Component 3</p>
+          <h2>Processing Delay</h2>
+          <p class="math-block">
+            d<sub>proc</sub> = processing input in ms / 1000
+          </p>
+          <p class="formula-copy">
+            Processing delay represents router work such as checking headers,
+            making forwarding decisions, and preparing the packet for the next
+            link. The input is entered in milliseconds and converted to seconds
+            internally.
+          </p>
+        </article>
+
+        <article class="formula-card">
+          <p class="card-kicker">Component 4</p>
+          <h2>Queueing Delay</h2>
+          <p class="math-block">
+            d<sub>queue</sub> = queueing input in ms / 1000
+          </p>
+          <p class="formula-copy">
+            Queueing delay represents time spent waiting in buffers before the
+            packet can be transmitted. This is also entered directly in
+            milliseconds and converted to seconds internally.
+          </p>
+        </article>
+
+        <article class="formula-card formula-card-wide">
+          <p class="card-kicker">Worked Example</p>
+          <h2>Using the Default Values</h2>
+          <div class="worked-grid">
+            <div class="worked-step">
+              <h3>Inputs</h3>
+              <p>Packet size = 1500 bytes</p>
+              <p>Bandwidth = 100 Mbps</p>
+              <p>Distance per link = 250 km</p>
+              <p>Propagation factor = 0.67c</p>
+              <p>Hop count = 4 devices</p>
+              <p>Processing = 0.3 ms per device</p>
+              <p>Queueing = 1.2 ms per device</p>
+            </div>
+            <div class="worked-step">
+              <h3>Transmission</h3>
+              <p class="math-inline">L = 1500 × 8 = 12000 bits</p>
+              <p class="math-inline">R = 100 × 10<sup>6</sup> bps</p>
+              <p class="math-inline">
+                d<sub>trans</sub> = 12000 / 100000000 = 0.00012 s = 0.120 ms
+              </p>
+            </div>
+            <div class="worked-step">
+              <h3>Propagation</h3>
+              <p class="math-inline">d = 250000 m</p>
+              <p class="math-inline">
+                s = 0.67 × 299792458 ≈ 200860947 m/s
+              </p>
+              <p class="math-inline">
+                d<sub>prop</sub> ≈ 250000 / 200860947 ≈ 0.001245 s = 1.245 ms
+              </p>
+            </div>
+            <div class="worked-step">
+              <h3>Per-Link Travel</h3>
+              <p class="math-inline">
+                0.120 ms + 1.245 ms
+              </p>
+              <p class="math-inline">= 1.365 ms per link</p>
+            </div>
+            <div class="worked-step">
+              <h3>Per-Device Delay</h3>
+              <p class="math-inline">
+                0.300 ms + 1.200 ms
+              </p>
+              <p class="math-inline">= 1.500 ms per device</p>
+            </div>
+            <div class="worked-step">
+              <h3>End-to-End Total</h3>
+              <p class="math-inline">(5 × (0.120 + 1.245)) + (4 × (0.300 + 1.200)) ms</p>
+              <p class="math-inline">= 12.825 ms total</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="formula-card formula-card-wide">
+          <p class="card-kicker">Path Model</p>
+          <h2>Why the Total Uses Multiplication</h2>
+          <p class="formula-copy">
+            Basic calculations assume each link is identical and each
+            intermediate device is identical. With per-link values, the total is
+            calculated as a sum across links and devices:
+          </p>
+          <p class="math-block">
+            d<sub>total</sub> = Σ(d<sub>trans,link i</sub> +
+            d<sub>prop,link i</sub>) + Σ(d<sub>proc,device j</sub> +
+            d<sub>queue,device j</sub>)
+          </p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
