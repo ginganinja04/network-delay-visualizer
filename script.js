@@ -29,7 +29,21 @@ const componentLabels = {
 
 const SIMULATION_NODE_SIZE = 98;
 const SIMULATION_NODE_MARGIN = 20;
-const MAX_PACKET_COUNT = 100;
+const SIMULATION_NODE_GAP = 132;
+const SIMULATION_ROW_GAP = 150;
+
+const inputLimits = {
+  packetSize: { min: 1, max: 1_000_000 },
+  bandwidthMbps: { min: 0.001, max: 1_000_000 },
+  distanceKm: { min: 0, max: 40_075 },
+  propagationFactor: { min: 0.01, max: 1 },
+  hops: { min: 0, max: 20 },
+  processingMs: { min: 0, max: 10_000 },
+  queueingMs: { min: 0, max: 10_000 },
+  packetLossPercent: { min: 0, max: 100 },
+  jitterMs: { min: 0, max: 10_000 },
+  packetCount: { min: 1, max: 100 },
+};
 
 const form = document.getElementById("controls");
 const resetButton = document.getElementById("resetButton");
@@ -69,34 +83,58 @@ let advancedModeEnabled = false;
 
 function readInputs() {
   const rawValues = Object.fromEntries(new FormData(form).entries());
-  const hops = Math.max(0, Math.round(clampNumber(rawValues.hops, 0, defaults.hops)));
-  const bandwidthMbps = clampNumber(rawValues.bandwidthMbps, 0.001, defaults.bandwidthMbps);
-  const distanceKm = clampNumber(rawValues.distanceKm, 0, defaults.distanceKm);
+  const hops = readLimitedInteger("hops", rawValues.hops);
+  const bandwidthMbps = readLimitedNumber("bandwidthMbps", rawValues.bandwidthMbps);
+  const distanceKm = readLimitedNumber("distanceKm", rawValues.distanceKm);
 
   return {
-    packetSize: clampNumber(rawValues.packetSize, 1, defaults.packetSize),
+    packetSize: readLimitedNumber("packetSize", rawValues.packetSize),
     bandwidthMbps,
     distanceKm,
-    propagationFactor: clampNumber(rawValues.propagationFactor, 0.01, defaults.propagationFactor),
+    propagationFactor: readLimitedNumber("propagationFactor", rawValues.propagationFactor),
     hops,
-    processingMs: clampNumber(rawValues.processingMs, 0, defaults.processingMs),
-    queueingMs: clampNumber(rawValues.queueingMs, 0, defaults.queueingMs),
-    packetLossPercent: Math.min(100, clampNumber(rawValues.packetLossPercent, 0, defaults.packetLossPercent)),
-    jitterMs: clampNumber(rawValues.jitterMs, 0, defaults.jitterMs),
-    packetCount: Math.min(MAX_PACKET_COUNT, Math.max(1, Math.round(clampNumber(rawValues.packetCount, 1, defaults.packetCount)))),
+    processingMs: readLimitedNumber("processingMs", rawValues.processingMs),
+    queueingMs: readLimitedNumber("queueingMs", rawValues.queueingMs),
+    packetLossPercent: readLimitedNumber("packetLossPercent", rawValues.packetLossPercent),
+    jitterMs: readLimitedNumber("jitterMs", rawValues.jitterMs),
+    packetCount: readLimitedInteger("packetCount", rawValues.packetCount),
     useAdvancedLinks: advancedModeEnabled,
     linkOverrides: readAdvancedLinkOverrides(hops + 1, { bandwidthMbps, distanceKm }, advancedModeEnabled),
   };
 }
 
-function clampNumber(value, min, fallback) {
+function readLimitedNumber(name, value) {
+  const limit = inputLimits[name];
+  const limited = clampNumber(value, limit.min, limit.max, defaults[name]);
+  syncLimitedFieldValue(name, limited);
+  return limited;
+}
+
+function readLimitedInteger(name, value) {
+  const limit = inputLimits[name];
+  const numeric = Number(value);
+  const rounded = Number.isFinite(numeric) ? Math.round(numeric) : defaults[name];
+  const limited = clampNumber(rounded, limit.min, limit.max, defaults[name]);
+  syncLimitedFieldValue(name, limited);
+  return limited;
+}
+
+function clampNumber(value, min, max, fallback) {
   const numeric = Number(value);
 
   if (!Number.isFinite(numeric)) {
     return fallback;
   }
 
-  return Math.max(min, numeric);
+  return Math.min(max, Math.max(min, numeric));
+}
+
+function syncLimitedFieldValue(name, value) {
+  const field = form.elements.namedItem(name);
+
+  if (field && field.value !== String(value)) {
+    field.value = value;
+  }
 }
 
 function calculateDelay(inputs) {
@@ -400,45 +438,68 @@ function renderSimulation(model) {
   simulationState.model = model;
 
   const nodeCount = model.inputs.hops + 2;
-  const stageWidth = simulationPath.clientWidth || simulationPath.offsetWidth || 800;
+  const viewportWidth = simulationPath.parentElement?.clientWidth || simulationPath.clientWidth || simulationPath.offsetWidth || 800;
   const edgePadding = SIMULATION_NODE_SIZE / 2 + SIMULATION_NODE_MARGIN;
+  const maxColumns = Math.max(2, Math.floor((viewportWidth - edgePadding * 2) / SIMULATION_NODE_GAP) + 1);
+  const columnCount = Math.min(nodeCount, maxColumns);
+  const rowCount = Math.ceil(nodeCount / columnCount);
+  const minimumPathWidth = edgePadding * 2 + (columnCount - 1) * SIMULATION_NODE_GAP;
+  const stageWidth = Math.max(viewportWidth, minimumPathWidth);
+  const stageHeight = 84 + (rowCount - 1) * SIMULATION_ROW_GAP + 84;
   const usableWidth = Math.max(160, stageWidth - edgePadding * 2);
   const centerY = 84;
+
+  simulationPath.style.width = `${stageWidth}px`;
+  simulationPath.style.height = `${stageHeight}px`;
+  packetLayer.style.width = `${stageWidth}px`;
+  packetLayer.style.height = `${stageHeight}px`;
+
   const positions = Array.from({ length: nodeCount }, (_, index) => {
-    if (nodeCount === 1) {
-      return stageWidth / 2;
+    if (columnCount === 1) {
+      return {
+        x: stageWidth / 2,
+        y: centerY,
+      };
     }
 
-    return edgePadding + (usableWidth * index) / (nodeCount - 1);
+    const row = Math.floor(index / columnCount);
+    const column = index % columnCount;
+    const visualColumn = row % 2 === 0 ? column : columnCount - 1 - column;
+
+    return {
+      x: edgePadding + (usableWidth * visualColumn) / (columnCount - 1),
+      y: centerY + row * SIMULATION_ROW_GAP,
+    };
   });
 
   simulationPath.innerHTML = buildSimulationLinks(positions, centerY) + buildSimulationNodes(positions, centerY);
   renderSimulationTimeline(model);
 }
 
-function buildSimulationLinks(positions, centerY) {
+function buildSimulationLinks(positions) {
   return positions
     .slice(0, -1)
-    .map((position, index) => {
-      const nextPosition = positions[index + 1];
-      const width = Math.max(0, nextPosition - position);
+    .map((source, index) => {
+      const target = positions[index + 1];
+      const width = Math.hypot(target.x - source.x, target.y - source.y);
+      const angle = Math.atan2(target.y - source.y, target.x - source.x);
       return `
         <div
           class="path-link"
-          style="left:${position}px; top:${centerY}px; width:${width}px;"
+          style="left:${source.x}px; top:${source.y}px; width:${width}px; transform: translateY(-50%) rotate(${angle}rad);"
         ></div>
       `;
     })
     .join("");
 }
 
-function buildSimulationNodes(positions, centerY) {
+function buildSimulationNodes(positions) {
   return positions
     .map((position, index) => {
       const label = index === 0 ? "Source" : index === positions.length - 1 ? "Destination" : `Device ${index}`;
       const sublabel = index === 0 || index === positions.length - 1 ? "host" : "router";
       return `
-        <div class="path-node" data-node-index="${index}" style="left:${position}px; top:${centerY}px;">
+        <div class="path-node" data-node-index="${index}" style="left:${position.x}px; top:${position.y}px;">
           <div class="path-node-copy">
             <strong>${label}</strong>
             <span>${sublabel}</span>
@@ -1058,10 +1119,23 @@ function readAdvancedLinkOverrides(linkCount, defaultsForLinks, useAdvanced) {
       };
     }
 
-    return {
-      bandwidthMbps: clampNumber(bandwidthField.value, 0.001, defaultsForLinks.bandwidthMbps),
-      distanceKm: clampNumber(distanceField.value, 0, defaultsForLinks.distanceKm),
-    };
+    const bandwidthMbps = clampNumber(
+      bandwidthField.value,
+      inputLimits.bandwidthMbps.min,
+      inputLimits.bandwidthMbps.max,
+      defaultsForLinks.bandwidthMbps,
+    );
+    const distanceKm = clampNumber(
+      distanceField.value,
+      inputLimits.distanceKm.min,
+      inputLimits.distanceKm.max,
+      defaultsForLinks.distanceKm,
+    );
+
+    bandwidthField.value = bandwidthMbps;
+    distanceField.value = distanceKm;
+
+    return { bandwidthMbps, distanceKm };
   });
 
   advancedLinkOverrides = rows;
@@ -1115,7 +1189,8 @@ function syncAdvancedLinkRows(inputs = readInputs()) {
               <input
                 name="linkBandwidthMbps-${index}"
                 type="number"
-                min="0.001"
+                min="${inputLimits.bandwidthMbps.min}"
+                max="${inputLimits.bandwidthMbps.max}"
                 step="0.001"
                 value="${link.bandwidthMbps}"
               />
@@ -1128,7 +1203,8 @@ function syncAdvancedLinkRows(inputs = readInputs()) {
               <input
                 name="linkDistanceKm-${index}"
                 type="number"
-                min="0"
+                min="${inputLimits.distanceKm.min}"
+                max="${inputLimits.distanceKm.max}"
                 step="0.1"
                 value="${link.distanceKm}"
               />

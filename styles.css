@@ -373,6 +373,8 @@ h1 {
   min-height: 220px;
   margin-top: 20px;
   padding: 32px 18px 28px;
+  overflow-x: auto;
+  overflow-y: hidden;
   border-radius: 24px;
   background:
     radial-gradient(circle at 20% 10%, rgba(15, 118, 110, 0.1), transparent 28%),
@@ -383,11 +385,15 @@ h1 {
 .simulation-path {
   position: relative;
   min-height: 160px;
+  min-width: 100%;
 }
 
 .packet-layer {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  min-width: 100%;
   pointer-events: none;
 }
 
@@ -397,6 +403,7 @@ h1 {
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(15, 118, 110, 0.22), rgba(37, 99, 235, 0.22));
   transform: translateY(-50%);
+  transform-origin: left center;
 }
 
 .path-node {
